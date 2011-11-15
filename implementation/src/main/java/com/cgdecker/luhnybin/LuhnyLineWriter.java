@@ -82,50 +82,32 @@ class LuhnyLineWriter {
    */
   private void check(String possibleCc) {
     // use a linked list that tracks the luhnyness of the values in it
-    LuhnyDigit start = null;
-    LuhnyDigit head = null;
+    LuhnyList number = new LuhnyList();
 
-    CharBuffer resultChars = CharBuffer.allocate(possibleCc.length());
+    CharBuffer buffer = CharBuffer.allocate(possibleCc.length());
 
     for (int i = 0; i < possibleCc.length(); i++) {
       char c = possibleCc.charAt(i);
 
       // go ahead and set the original value... only need to replace it if there's a match
-      resultChars.put(i, c);
+      buffer.put(i, c);
 
       if (CharMatcher.DIGIT.matches(c)) {
-        head = new LuhnyDigit(c - '0', i, head);
+        number.addDigit(c, i);
 
-        if (start == null) {
-          start = head;
-        }
+        // don't need to check/mask any shorter lists ending at this index if we mask the whole thing
+        boolean masked = number.mask(buffer);
 
-        if (head.length(start) > 16) {
-          start = start.getRight();
-        }
-
-        boolean masked = maskDigits(start, head, resultChars);
-
-        if (!masked && head.length(start) > 14) {
-          for (LuhnyDigit smallerStart = start.getRight();
-               !masked && head.length(smallerStart) >= 14;
-               smallerStart = smallerStart.getRight()) {
-            masked = maskDigits(smallerStart, head, resultChars);
+        if (!masked && number.length() > 14) {
+          for (LuhnyList shorterNumber = number.dropFirst();
+               !masked && shorterNumber.length() >= 14;
+               shorterNumber = shorterNumber.dropFirst()) {
+            masked = shorterNumber.mask(buffer);
           }
         }
       }
     }
 
-    writer.append(resultChars);
-  }
-
-  private boolean maskDigits(LuhnyDigit start, LuhnyDigit head, CharBuffer resultChars) {
-    if (head.length() >= 14 && head.isLuhny(start)) {
-      for (LuhnyDigit digit : start) {
-        resultChars.put(digit.getIndex(), 'X');
-      }
-      return true;
-    }
-    return false;
+    writer.append(buffer);
   }
 }
