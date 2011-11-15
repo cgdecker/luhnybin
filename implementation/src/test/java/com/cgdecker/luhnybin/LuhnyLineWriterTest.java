@@ -30,6 +30,10 @@ public class LuhnyLineWriterTest {
     assertMask("99929316122852072", "99929316122852072");
   }
 
+  @Test public void test16DigitFlankedByNonMatching() {
+    assertMask("9875610591081018250321", "987XXXXXXXXXXXXXXXX321");
+  }
+
   private static void assertMask(String in, String expectedOut) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     PrintWriter writer = new PrintWriter(out, true);

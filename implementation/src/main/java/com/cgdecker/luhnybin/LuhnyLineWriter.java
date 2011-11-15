@@ -70,7 +70,7 @@ class LuhnyLineWriter {
         writer.append(line.substring(pos, nextNonCcPos));
     } else {
       // we have a 14+ character substring with only digits, spaces and hyphens... check it
-      check(line.substring(pos, nextNonCcPos));
+      check(line.substring(pos, nextNonCcPos), totalDigits);
     }
     return nextNonCcPos == line.length() ? -1 : nextNonCcPos;
   }
@@ -80,9 +80,9 @@ class LuhnyLineWriter {
    * numbers in it. If it does, the string is written to the result with their digits replaced
    * with Xs. If it does not, the string is written to the result as is.
    */
-  private void check(String possibleCc) {
+  private void check(String possibleCc, int totalDigits) {
     // use a linked list that tracks the luhnyness of the values in it
-    LuhnyList number = new LuhnyList();
+    LuhnyList number = new LuhnyList(totalDigits);
 
     CharBuffer buffer = CharBuffer.allocate(possibleCc.length());
 
@@ -95,14 +95,13 @@ class LuhnyLineWriter {
       if (CharMatcher.DIGIT.matches(c)) {
         number.addDigit(c, i);
 
-        // don't need to check/mask any shorter lists ending at this index if we mask the whole thing
-        boolean masked = number.mask(buffer);
-
-        if (!masked && number.length() > 14) {
-          for (LuhnyList shorterNumber = number.dropFirst();
-               !masked && shorterNumber.length() >= 14;
-               shorterNumber = shorterNumber.dropFirst()) {
-            masked = shorterNumber.mask(buffer);
+        if (number.length() >= 14) {
+          // don't need to check/mask any shorter lists ending at this index if we mask the whole
+          // thing
+          boolean masked = false;
+          for (LuhnyList numberToCheck = number; !masked && numberToCheck.length() >= 14;
+               numberToCheck = numberToCheck.dropFirst()) {
+            masked = numberToCheck.mask(buffer);
           }
         }
       }
