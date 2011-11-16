@@ -3,11 +3,13 @@ package com.cgdecker.luhnybin;
 import com.google.common.io.CharStreams;
 import com.google.common.io.InputSupplier;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 
 /**
@@ -22,16 +24,20 @@ import java.nio.charset.Charset;
  */
 public class Main {
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) {
     InputSupplier<InputStreamReader> standardInSupplier = CharStreams.newReaderSupplier(
         new InputSupplier<InputStream>() {
           public InputStream getInput() throws IOException {
-            return System.in;
+            return new BufferedInputStream(System.in);
           }
         }, Charset.defaultCharset());
 
-    PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
-    CharStreams.readLines(standardInSupplier, new LuhnyLineProcessor(out));
+    Writer out = new OutputStreamWriter(System.out, Charset.defaultCharset());
+    try {
+      CharStreams.readLines(standardInSupplier, new LuhnyLineProcessor(out));
+    } catch (IOException e) {
+      System.exit(1);
+    }
   }
 
 }

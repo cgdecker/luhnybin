@@ -2,8 +2,8 @@ package com.cgdecker.luhnybin;
 
 import com.google.common.base.CharMatcher;
 
-import java.io.PrintWriter;
-import java.nio.CharBuffer;
+import java.io.IOException;
+import java.io.Writer;
 
 /**
  * @author cgdecker@gmail.com (Colin Decker)
@@ -14,19 +14,22 @@ class LuhnyLineWriter {
   private static final CharMatcher CC_CHARS = CharMatcher.DIGIT.or(CC_SEPARATORS);
 
   private final String line;
-  private final PrintWriter writer;
+  private final Writer writer;
+  private final char[] buffer;
 
-  public LuhnyLineWriter(String line, PrintWriter writer) {
+  public LuhnyLineWriter(String line, Writer writer) {
     this.line = line;
     this.writer = writer;
+    this.buffer = new char[line.length() + 1];
+    buffer[buffer.length - 1] = '\n';
   }
 
-  public void process() {
+  public void process() throws IOException {
     int pos = 0;
     while (pos != -1 && (pos = skip(pos)) != -1) {
       pos = check(pos);
     }
-    writer.write('\n');
+    writer.write(buffer);
     writer.flush();
   }
 
@@ -38,7 +41,7 @@ class LuhnyLineWriter {
   private int skip(int pos) {
     char c;
     while (pos < line.length() && !CC_CHARS.matches((c = line.charAt(pos)))) {
-      writer.append(c);
+      buffer[pos] = c;
       pos++;
     }
     return pos == line.length() ? -1 : pos;
@@ -50,27 +53,25 @@ class LuhnyLineWriter {
    * Returns the index of the next non-credit card character or -1 if the end of line is reached.
    */
   private int check(int pos) {
-    // find the index of the next non-CC char first, to save us work if there aren't enough chars
-    // to make a CC number
-    int nextNonCcPos = pos + 1;
-    int totalDigits = CharMatcher.DIGIT.matches(line.charAt(pos)) ? 1 : 0;
-    while (nextNonCcPos < line.length()) {
-      char c = line.charAt(nextNonCcPos++);
+    int totalDigits = 0;
+    int i = pos;
+    char c;
+    do {
+      c = line.charAt(i);
+      buffer[i] = c;
       if (CharMatcher.DIGIT.matches(c)) {
         totalDigits++;
       } else if (!CC_SEPARATORS.matches(c)) {
         break;
       }
-    }
+      i++;
+    } while (i < line.length());
 
-    if (totalDigits < 14) { // can't be CC number, too few digits
-      if (nextNonCcPos == line.length()) // EOL
-        writer.append(line.substring(pos));
-      else
-        writer.append(line.substring(pos, nextNonCcPos));
-    } else {
+    int nextNonCcPos = i;
+
+    if (totalDigits >= 14) {
       // we have a 14+ character substring with only digits, spaces and hyphens... check it
-      check(line.substring(pos, nextNonCcPos), totalDigits);
+      check(pos, nextNonCcPos - pos, totalDigits);
     }
     return nextNonCcPos == line.length() ? -1 : nextNonCcPos;
   }
@@ -80,20 +81,15 @@ class LuhnyLineWriter {
    * numbers in it. If it does, the string is written to the result with their digits replaced
    * with Xs. If it does not, the string is written to the result as is.
    */
-  private void check(String possibleCc, int totalDigits) {
+  private void check(int offset, int length, int totalDigits) {
     // use a linked list that tracks the luhnyness of the values in it
     LuhnyList number = new LuhnyList(totalDigits);
 
-    CharBuffer buffer = CharBuffer.allocate(possibleCc.length());
-
-    for (int i = 0; i < possibleCc.length(); i++) {
-      char c = possibleCc.charAt(i);
-
-      // go ahead and set the original value... only need to replace it if there's a match
-      buffer.put(i, c);
+    for (int i = offset; i < offset + length; i++) {
+      char c = line.charAt(i);
 
       if (CharMatcher.DIGIT.matches(c)) {
-        number.addDigit(c, i);
+        number.addDigit(c, i - offset);
 
         if (number.length() >= 14) {
           // don't need to check/mask any shorter lists ending at this index if we mask the whole
@@ -101,12 +97,12 @@ class LuhnyLineWriter {
           boolean masked = false;
           for (LuhnyList numberToCheck = number; !masked && numberToCheck.length() >= 14;
                numberToCheck = numberToCheck.dropFirst()) {
-            masked = numberToCheck.mask(buffer);
+            masked = numberToCheck.mask(buffer, offset);
           }
         }
       }
     }
 
-    writer.append(buffer);
+    // writer.append(buffer);
   }
 }

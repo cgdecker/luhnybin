@@ -2,7 +2,6 @@ package com.cgdecker.luhnybin;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -34,12 +33,17 @@ public class LuhnyLineWriterTest {
     assertMask("9875610591081018250321", "987XXXXXXXXXXXXXXXX321");
   }
 
+  @Test public void exceptionMessageContainingACard() {
+    assertMask("java.lang.FakeException: 7230 3161 3748 4124 is a card #.",
+        "java.lang.FakeException: XXXX XXXX XXXX XXXX is a card #.");
+  }
+
   private static void assertMask(String in, String expectedOut) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     PrintWriter writer = new PrintWriter(out, true);
-    new LuhnyLineWriter(in, writer).process();
-    writer.flush();
     try {
+      new LuhnyLineWriter(in, writer).process();
+      writer.flush();
       out.flush();
     } catch (IOException e) {
       throw new AssertionError(e);

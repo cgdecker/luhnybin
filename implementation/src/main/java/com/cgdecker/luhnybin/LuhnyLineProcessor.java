@@ -1,19 +1,18 @@
 package com.cgdecker.luhnybin;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.io.LineProcessor;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.Writer;
 
 /**
  * @author cgdecker@gmail.com (Colin Decker)
  */
 public class LuhnyLineProcessor implements LineProcessor<Void> {
 
-  private final PrintWriter writer;
+  private final Writer writer;
 
-  public LuhnyLineProcessor(PrintWriter writer) {
+  public LuhnyLineProcessor(Writer writer) {
     this.writer = writer;
   }
 

@@ -1,7 +1,5 @@
 package com.cgdecker.luhnybin;
 
-import java.nio.CharBuffer;
-
 /**
  * A list of digits used for checking for a possible credit card number. May not be longer than 16
  * digits.
@@ -73,10 +71,10 @@ public class LuhnyList {
    * Masks the digits of this list in the given buffer if the number it represents may be a credit
    * card number. Returns true if the digits were masked; false otherwise.
    */
-  public boolean mask(CharBuffer buffer) {
+  public boolean mask(char[] buffer, int offset) {
     if (mayBeCreditCardNumber()) {
       for (int i = start; i < end; i++) {
-        buffer.put(indices[i], 'X');
+        buffer[offset + indices[i]] = 'X';
       }
       return true;
     }
