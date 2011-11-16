@@ -20,6 +20,10 @@ public class LuhnyLineWriterTest {
     assertMask("56613959932537", "XXXXXXXXXXXXXX");
   }
 
+  @Test public void testValid16DigitNumber() {
+    assertMask("6853371389452376", "XXXXXXXXXXXXXXXX");
+  }
+
   @Test public void testLineFeedOnly() throws IOException {
     assertMask("LF only ->", "LF only ->");
     assertMask("<- LF only", "<- LF only");
