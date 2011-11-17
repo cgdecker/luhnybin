@@ -42,6 +42,14 @@ public class LuhnyLineWriterTest {
         "java.lang.FakeException: XXXX XXXX XXXX XXXX is a card #.");
   }
 
+  @Test public void valid14DigitAtEndOfInvalid16Digit() {
+    assertMask("1256613959932537", "12XXXXXXXXXXXXXX");
+  }
+
+  @Test public void twoValid14DigitsInARow() {
+    assertMask("5661395993253756613959932537", "XXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  }
+
   private static void assertMask(String in, String expectedOut) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     PrintWriter writer = new PrintWriter(out, true);
