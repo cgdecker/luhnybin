@@ -63,30 +63,35 @@ public class LuhnyList {
   }
 
   /**
-   * Returns a shorter list with the first (leftmost) digit dropped.
+   * For the digits this list represents and any shorter list of digits that ends at the digit this
+   * list ends at, masks the digits if they pass the Luhn check and may be a credit card number.
    */
-  public LuhnyList dropFirst() {
-    return new LuhnyList(this, start + 1);
+  public void mask(char[] buffer, int offset) {
+    int originalStart = start;
+    try {
+      while (length() >= 14) {
+        if (shouldMask()) {
+          maskUnmaskedDigits(buffer, offset);
+          return;
+        } else {
+          start++;
+        }
+      }
+    } finally {
+      start = originalStart;
+    }
   }
 
-  /**
-   * Masks the digits of this list in the given buffer if the number it represents may be a credit
-   * card number. Returns true if the digits were masked; false otherwise.
-   */
-  public boolean mask(char[] buffer, int offset) {
-    if (shouldMask()) {
-      for (int i = start; i < end; i++) {
-        if (!mask(buffer, offset, i))
-          break;
-      }
-
-      for (int i = end - 1; i >= start; i--) {
-        if (!mask(buffer, offset, i))
-          break;
-      }
-      return true;
+  private void maskUnmaskedDigits(char[] buffer, int offset) {
+    for (int i = start; i < end; i++) {
+      if (!mask(buffer, offset, i))
+        break;
     }
-    return false;
+
+    for (int i = end - 1; i >= start; i--) {
+      if (!mask(buffer, offset, i))
+        break;
+    }
   }
 
   private boolean mask(char[] buffer, int offset, int i) {

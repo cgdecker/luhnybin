@@ -76,22 +76,16 @@ class LuhnyLineWriter {
    */
   private void check(int offset, int length, int totalDigits) {
     // use an array-based list that tracks the Luhn digit sums of the values in it
-    LuhnyList number = new LuhnyList(totalDigits);
+    LuhnyList digits = new LuhnyList(totalDigits);
 
     for (int i = offset; i < offset + length; i++) {
       char c = line.charAt(i);
 
       if (Character.isDigit(c)) {
-        number.addDigit(c, i - offset);
+        digits.addDigit(c, i - offset);
 
-        if (number.length() >= 14) {
-          // only need to mask the longest match ending at this index
-          boolean masked = false;
-          for (LuhnyList numberToCheck = number;
-               !masked && numberToCheck.length() >= 14;
-               numberToCheck = numberToCheck.dropFirst()) {
-            masked = numberToCheck.mask(buffer, offset);
-          }
+        if (digits.length() >= 14) {
+          digits.mask(buffer, offset);
         }
       }
     }
