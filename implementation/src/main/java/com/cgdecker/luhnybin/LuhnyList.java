@@ -17,15 +17,10 @@ public class LuhnyList {
   private int start;
   private int end;
 
-  private final int[] firstMasked;
-  private final int[] lastMasked;
-
   public LuhnyList(int maxLength) {
     this.evens = new int[maxLength];
     this.odds = new int[maxLength];
     this.indices = new int[maxLength];
-    this.firstMasked = new int[]{Integer.MAX_VALUE};
-    this.lastMasked = new int[]{-1};
   }
 
   private LuhnyList(LuhnyList parent, int start) {
@@ -35,8 +30,6 @@ public class LuhnyList {
 
     this.start = start;
     this.end = parent.end;
-    this.firstMasked = parent.firstMasked;
-    this.lastMasked = parent.lastMasked;
   }
 
   /**
@@ -81,33 +74,31 @@ public class LuhnyList {
    * card number. Returns true if the digits were masked; false otherwise.
    */
   public boolean mask(char[] buffer, int offset) {
-    if (mayBeCreditCardNumber()) {
-      if (start < firstMasked[0]) {
-        int i = start;
-        while (i < end && i < firstMasked[0]) {
-          mask(buffer, offset, i++);
-        }
-        if (i != firstMasked[0])
-          lastMasked[0] = end - 1;
-        firstMasked[0] = start;
+    if (shouldMask()) {
+      for (int i = start; i < end; i++) {
+        if (!mask(buffer, offset, i))
+          break;
       }
 
-      if (end - 1 > lastMasked[0]) {
-        for (int i = end - 1; i >= start && i > lastMasked[0]; i--) {
-          mask(buffer, offset, i);
-        }
-        lastMasked[0] = end - 1;
+      for (int i = end - 1; i >= start; i--) {
+        if (!mask(buffer, offset, i))
+          break;
       }
       return true;
     }
     return false;
   }
 
-  private void mask(char[] buffer, int offset, int i) {
-    buffer[offset + indices[i]] = 'X';
+  private boolean mask(char[] buffer, int offset, int i) {
+    if (buffer[offset + indices[i]] != 'X') {
+      buffer[offset + indices[i]] = 'X';
+      return true;
+    } else {
+      return false;
+    }
   }
 
-  private boolean mayBeCreditCardNumber() {
+  private boolean shouldMask() {
     return length() >= 14 && isLuhny();
   }
 
