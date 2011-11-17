@@ -1,28 +1,40 @@
 package com.cgdecker.luhnybin;
 
-import com.google.common.base.CharMatcher;
+import com.google.common.io.LineProcessor;
 
 import java.io.IOException;
 import java.io.Writer;
 
 /**
+ * Handles processing a single line of input.
+ *
  * @author cgdecker@gmail.com (Colin Decker)
  */
-class LuhnyLineWriter {
+public final class LuhnyLineWriter {
 
-  private static final CharMatcher SEPARATORS = CharMatcher.anyOf("- ").precomputed();
+  /**
+   * Creates a {@link LineProcessor} implementation that writes filtered lines to the given writer.
+   */
+  public static LineProcessor<Void> newLineProcessor(Writer writer) {
+    return new Processor(writer);
+  }
 
-  private final String line;
+  /**
+   * Processes the given line, writing the processed output to the given writer.
+   */
+  public static void process(String line, Writer writer) throws IOException {
+    new LuhnyLineWriter(line, writer).run();
+  }
+
   private final Writer writer;
   private final char[] buffer;
 
-  public LuhnyLineWriter(String line, Writer writer) {
-    this.line = line;
+  private LuhnyLineWriter(String line, Writer writer) {
     this.writer = writer;
     this.buffer = line.toCharArray();
   }
 
-  public void process() throws IOException {
+  private void run() throws IOException {
     int pos = 0;
     while (pos != -1 && (pos = nextDigit(pos)) != -1) {
       pos = check(pos);
@@ -36,7 +48,11 @@ class LuhnyLineWriter {
    * Returns the index of the next digit or -1 if the end of line is reached.
    */
   private int nextDigit(int pos) {
-    return CharMatcher.DIGIT.indexIn(line, pos);
+    for (int i = pos; i < buffer.length; i++) {
+      if (isDigit(buffer[i]))
+        return i;
+    }
+    return -1;
   }
 
   /**
@@ -50,15 +66,15 @@ class LuhnyLineWriter {
     int lastDigitIndex = i;
     char c;
     do {
-      c = line.charAt(i);
-      if (Character.isDigit(c)) {
+      c = buffer[i];
+      if (isDigit(c)) {
         totalDigits++;
         lastDigitIndex = i;
-      } else if (!SEPARATORS.matches(c)) {
+      } else if (!isSeparator(c)) {
         break;
       }
       i++;
-    } while (i < line.length());
+    } while (i < buffer.length);
 
     int nextNonCcPos = i;
 
@@ -66,7 +82,7 @@ class LuhnyLineWriter {
       // we have a 14+ character substring with only digits, spaces and hyphens... check it
       check(pos, lastDigitIndex - pos + 1, totalDigits);
     }
-    return nextNonCcPos == line.length() ? -1 : nextNonCcPos;
+    return nextNonCcPos == buffer.length ? -1 : nextNonCcPos;
   }
 
   /**
@@ -79,15 +95,43 @@ class LuhnyLineWriter {
     LuhnyList digits = new LuhnyList(totalDigits);
 
     for (int i = offset; i < offset + length; i++) {
-      char c = line.charAt(i);
+      char c = buffer[i];
 
-      if (Character.isDigit(c)) {
-        digits.addDigit(c, i - offset);
+      if (isDigit(c)) {
+        digits.add(c, i - offset);
 
         if (digits.length() >= 14) {
           digits.mask(buffer, offset);
         }
       }
+    }
+  }
+
+  private static boolean isSeparator(char c) {
+    return c == ' ' || c == '-';
+  }
+
+  private static boolean isDigit(char c) {
+    return '0' <= c && c <= '9';
+  }
+
+  /**
+   * {@link LineProcessor} implementation that writes filtered lines to the given writer.
+   */
+  private static final class Processor implements LineProcessor<Void> {
+    private final Writer writer;
+
+    public Processor(Writer writer) {
+      this.writer = writer;
+    }
+
+    public boolean processLine(String line) throws IOException {
+      LuhnyLineWriter.process(line, writer);
+      return true;
+    }
+
+    public Void getResult() {
+      return null;
     }
   }
 }

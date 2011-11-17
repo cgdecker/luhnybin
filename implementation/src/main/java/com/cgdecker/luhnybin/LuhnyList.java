@@ -6,9 +6,9 @@ package com.cgdecker.luhnybin;
  *
  * @author cgdecker@gmail.com (Colin Decker)
  */
-public class LuhnyList {
+final class LuhnyList {
 
-  private static final int[] DOUBLE_SUM = {0, 2, 4, 6, 8, 1, 3, 5, 7, 9};
+  private static final int[] DOUBLE_SUMS = {0, 2, 4, 6, 8, 1, 3, 5, 7, 9};
 
   private final int[] evens;
   private final int[] odds;
@@ -23,23 +23,14 @@ public class LuhnyList {
     this.indices = new int[maxLength];
   }
 
-  private LuhnyList(LuhnyList parent, int start) {
-    this.evens = parent.evens;
-    this.odds = parent.odds;
-    this.indices = parent.indices;
-
-    this.start = start;
-    this.end = parent.end;
-  }
-
   /**
    * Adds the given digit which is at the given index in the original string. If adding this digit
    * would cause the length of the list to go over 16, the first digit will be dropped.
    */
-  public void addDigit(char digit, int index) {
+  public void add(char digit, int index) {
     int number = digit - '0';
     evens[end] = number;
-    odds[end] = DOUBLE_SUM[number];
+    odds[end] = DOUBLE_SUMS[number];
 
     if (end > 0) {
       evens[end] += odds[end - 1];
@@ -116,9 +107,8 @@ public class LuhnyList {
       return 0;
     }
 
-    boolean evenLength = length() % 2 == 0;
     int startDiff = start == 0 ? 0 :
-        (evenLength ? evens[start - 1] : odds[start - 1]);
+        (length() % 2 == 0 ? evens[start - 1] : odds[start - 1]);
     return evens[end - 1] - startDiff;
   }
 }

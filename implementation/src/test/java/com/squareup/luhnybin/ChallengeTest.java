@@ -1,6 +1,6 @@
 package com.squareup.luhnybin;
 
-import com.cgdecker.luhnybin.LuhnyLineProcessor;
+import com.cgdecker.luhnybin.LuhnyLineWriter;
 import com.google.common.base.Stopwatch;
 import com.google.common.io.CharStreams;
 import com.google.common.io.InputSupplier;
@@ -58,7 +58,7 @@ public class ChallengeTest {
 
         Writer out = new OutputStreamWriter(implOut, Charset.defaultCharset());
         try {
-          CharStreams.readLines(inFromTestSupplier, new LuhnyLineProcessor(out));
+          CharStreams.readLines(inFromTestSupplier, LuhnyLineWriter.newLineProcessor(out));
 
         } catch (IOException e) {
           throw new RuntimeException(e);

@@ -54,7 +54,7 @@ public class LuhnyLineWriterTest {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     PrintWriter writer = new PrintWriter(out, true);
     try {
-      new LuhnyLineWriter(in, writer).process();
+      LuhnyLineWriter.process(in, writer);
       writer.flush();
       out.flush();
     } catch (IOException e) {
