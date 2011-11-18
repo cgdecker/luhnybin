@@ -1,5 +1,6 @@
 package com.cgdecker.luhnybin;
 
+import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import org.junit.Test;
@@ -52,15 +53,13 @@ public class LuhnyLineWriterTest {
 
   private static void assertMask(String in, String expectedOut) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    PrintWriter writer = new PrintWriter(out, true);
+    String result;
     try {
-      LuhnyLineWriter.process(in, writer);
-      writer.flush();
-      out.flush();
+      result = new String(LuhnyLineMasker.process(in));
     } catch (IOException e) {
       throw new AssertionError(e);
     }
-    assertEquals(expectedOut + '\n', getOutput(out.toByteArray()));
+    assertEquals(expectedOut + '\n', result + '\n');
   }
 
   private static String getOutput(byte[] bytes) {

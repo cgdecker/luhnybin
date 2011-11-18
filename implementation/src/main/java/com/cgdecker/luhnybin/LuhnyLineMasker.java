@@ -4,44 +4,47 @@ import com.google.common.io.LineProcessor;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * Handles processing a single line of input.
  *
  * @author cgdecker@gmail.com (Colin Decker)
  */
-public final class LuhnyLineWriter {
+public final class LuhnyLineMasker {
 
   /**
-   * Creates a {@link LineProcessor} implementation that writes filtered lines to the given writer.
+   * Creates a {@link LineProcessor} implementation that submits line masking tasks to the given
+   * executor and adds the resulting futures to the end of the given queue.
    */
-  public static LineProcessor<Void> newLineProcessor(Writer writer) {
-    return new Processor(writer);
+  public static LineProcessor<Void> newLineProcessor(ExecutorService executor,
+      BlockingQueue<Future<char[]>> queue) {
+    return new Processor(executor, queue);
   }
 
   /**
    * Processes the given line, writing the processed output to the given writer.
    */
-  public static void process(String line, Writer writer) throws IOException {
-    new LuhnyLineWriter(line, writer).run();
+  public static char[] process(String line) throws IOException {
+    return new LuhnyLineMasker(line).run();
   }
 
-  private final Writer writer;
   private final char[] buffer;
 
-  private LuhnyLineWriter(String line, Writer writer) {
-    this.writer = writer;
+  private LuhnyLineMasker(String line) {
     this.buffer = line.toCharArray();
   }
 
-  private void run() throws IOException {
+  private char[] run() throws IOException {
     int pos = 0;
     while (pos != -1 && (pos = nextDigit(pos)) != -1) {
       pos = check(pos);
     }
-    writer.write(buffer);
-    writer.write('\n');
-    writer.flush();
+    return buffer;
   }
 
   /**
@@ -119,19 +122,39 @@ public final class LuhnyLineWriter {
    * {@link LineProcessor} implementation that writes filtered lines to the given writer.
    */
   private static final class Processor implements LineProcessor<Void> {
-    private final Writer writer;
+    private final ExecutorService executor;
+    private final BlockingQueue<Future<char[]>> queue;
 
-    public Processor(Writer writer) {
-      this.writer = writer;
+    public Processor(ExecutorService executor, BlockingQueue<Future<char[]>> queue) {
+      this.executor = executor;
+      this.queue = queue;
     }
 
     public boolean processLine(String line) throws IOException {
-      LuhnyLineWriter.process(line, writer);
+      try {
+        queue.put(executor.submit(new ProcessLineTask(line)));
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      }
       return true;
     }
 
     public Void getResult() {
       return null;
+    }
+  }
+
+  private static final class ProcessLineTask implements Callable<char[]> {
+
+    private final String line;
+
+    public ProcessLineTask(String line) {
+      this.line = line;
+    }
+
+    @Override public char[] call() throws Exception {
+      return LuhnyLineMasker.process(line);
     }
   }
 }

@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.Writer;
 
 /**
  * @author cgdecker@gmail.com (Colin Decker)
@@ -17,12 +16,8 @@ import java.io.Writer;
 public class Main {
 
   public static void main(String[] args) {
-    try {
-      CharStreams.readLines(standardInReaderSupplier(),
-          LuhnyLineWriter.newLineProcessor(standardOutWriter()));
-    } catch (IOException e) {
-      System.exit(1);
-    }
+    LuhnMaskService service = new LuhnMaskService();
+    service.run(standardInReaderSupplier(), standardOutWriter());
   }
 
   private static BufferedWriter standardOutWriter() {
