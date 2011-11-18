@@ -4,7 +4,6 @@ import com.google.common.io.LineProcessor;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -18,12 +17,19 @@ import java.util.concurrent.Future;
 public final class LuhnyLineMasker {
 
   /**
-   * Creates a {@link LineProcessor} implementation that submits line masking tasks to the given
-   * executor and adds the resulting futures to the end of the given queue.
+   * Creates a {@link LineProcessor} that writes processed lines to the given writer.
    */
-  public static LineProcessor<Void> newLineProcessor(ExecutorService executor,
+  public static LineProcessor<Void> newWritingLineProcessor(Writer writer) {
+    return new WritingProcessor(writer);
+  }
+
+  /**
+   * Creates a {@link LineProcessor} that submits processing tasks to an executor and adds the resulting
+   * {@link Future}s to a blocking queue for another thread to read.
+   */
+  public static LineProcessor<Void> newAsyncLineProcessor(ExecutorService executor,
       BlockingQueue<Future<char[]>> queue) {
-    return new Processor(executor, queue);
+    return new AsyncProcessor(executor, queue);
   }
 
   /**
@@ -121,11 +127,37 @@ public final class LuhnyLineMasker {
   /**
    * {@link LineProcessor} implementation that writes filtered lines to the given writer.
    */
-  private static final class Processor implements LineProcessor<Void> {
+  private static final class WritingProcessor implements LineProcessor<Void> {
+
+    private final Writer writer;
+
+    public WritingProcessor(Writer writer) {
+      this.writer = writer;
+    }
+
+    @Override public boolean processLine(String line) throws IOException {
+      char[] result = process(line);
+      writer.write(result);
+      writer.write('\n');
+      writer.flush();
+      return true;
+    }
+
+    @Override public Void getResult() {
+      return null;
+    }
+  }
+
+  /**
+   * A {@link LineProcessor} that submits processing tasks to an executor and adds the resulting
+   * {@link Future}s to a blocking queue for another thread to read.
+   */
+  private static final class AsyncProcessor implements LineProcessor<Void> {
+
     private final ExecutorService executor;
     private final BlockingQueue<Future<char[]>> queue;
 
-    public Processor(ExecutorService executor, BlockingQueue<Future<char[]>> queue) {
+    public AsyncProcessor(ExecutorService executor, BlockingQueue<Future<char[]>> queue) {
       this.executor = executor;
       this.queue = queue;
     }
@@ -154,7 +186,7 @@ public final class LuhnyLineMasker {
     }
 
     @Override public char[] call() throws Exception {
-      return LuhnyLineMasker.process(line);
+      return process(line);
     }
   }
 }

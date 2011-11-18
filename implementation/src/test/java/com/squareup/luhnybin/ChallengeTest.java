@@ -1,7 +1,6 @@
 package com.squareup.luhnybin;
 
-import com.cgdecker.luhnybin.LuhnMaskService;
-import com.cgdecker.luhnybin.LuhnyLineMasker;
+import com.cgdecker.luhnybin.SingleThreadedLuhnMasker;
 import com.google.common.base.Stopwatch;
 import com.google.common.io.CharStreams;
 import com.google.common.io.InputSupplier;
@@ -58,7 +57,7 @@ public class ChallengeTest {
         }, Charset.defaultCharset());
 
         Writer out = new OutputStreamWriter(implOut, Charset.defaultCharset());
-        new LuhnMaskService().run(inFromTestSupplier, out);
+        new SingleThreadedLuhnMasker().run(inFromTestSupplier, out);
       }
     });
 

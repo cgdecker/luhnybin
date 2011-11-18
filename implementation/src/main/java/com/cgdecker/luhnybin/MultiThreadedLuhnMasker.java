@@ -16,7 +16,7 @@ import java.util.concurrent.Future;
 /**
  * @author cgdecker@gmail.com (Colin Decker)
  */
-public class LuhnMaskService {
+public class MultiThreadedLuhnMasker implements LuhnMasker {
 
   private static final Future<char[]> POISON = Futures.immediateFuture(null);
 
@@ -26,12 +26,12 @@ public class LuhnMaskService {
   private final BlockingQueue<Future<char[]>> processFutures =
       new ArrayBlockingQueue<Future<char[]>>(20);
 
-  public void run(final InputSupplier<? extends Reader> inSupplier, final Writer out) {
+  @Override public void run(final InputSupplier<? extends Reader> inSupplier, final Writer out) {
     new Thread(new Runnable() {
       @Override public void run() {
         try {
           CharStreams.readLines(inSupplier,
-              LuhnyLineMasker.newLineProcessor(processingExecutor, processFutures));
+              LuhnyLineMasker.newAsyncLineProcessor(processingExecutor, processFutures));
           processFutures.put(POISON);
         } catch (IOException e) {
           throw new RuntimeException(e);
