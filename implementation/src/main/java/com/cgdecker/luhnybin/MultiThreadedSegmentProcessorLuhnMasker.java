@@ -9,34 +9,25 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * @author cgdecker@gmail.com (Colin Decker)
+ * @author Colin Decker
  */
-public class MultiThreadedLuhnMasker implements LuhnMasker {
+public class MultiThreadedSegmentProcessorLuhnMasker implements LuhnMasker {
 
   private static final Future<char[]> POISON = Futures.immediateFuture(null);
 
-  private final ExecutorService processingExecutor = Executors.newFixedThreadPool(
-      Runtime.getRuntime().availableProcessors());
-
   private final BlockingQueue<Future<char[]>> processFutures =
-      new ArrayBlockingQueue<Future<char[]>>(100);
+      new ArrayBlockingQueue<Future<char[]>>(400);
 
   @Override public void run(final InputSupplier<? extends Reader> inSupplier, final Writer out) {
     new Thread(new Runnable() {
       @Override public void run() {
         try {
-          CharStreams.readLines(inSupplier,
-              LuhnyLineMasker.newAsyncLineProcessor(processingExecutor, processFutures));
-          processFutures.put(POISON);
+          MaskableStreams.read(inSupplier.getInput(), SegmentProcessors.newMultithreadedProcessor(
+              processFutures, POISON));
         } catch (IOException e) {
-          throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
           throw new RuntimeException(e);
         }
       }
@@ -47,12 +38,11 @@ public class MultiThreadedLuhnMasker implements LuhnMasker {
         Future<char[]> processedLineFuture;
         try {
           while ((processedLineFuture = processFutures.take()) != POISON) {
-            char[] line = processedLineFuture.get();
-            out.write(line);
-            out.write('\n');
+            char[] segment = processedLineFuture.get();
+            //System.err.println(new String(segment));
+            out.write(segment);
             out.flush();
           }
-          processingExecutor.shutdown();
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           throw new RuntimeException(e);
