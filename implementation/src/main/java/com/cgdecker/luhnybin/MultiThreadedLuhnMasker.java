@@ -24,7 +24,7 @@ public class MultiThreadedLuhnMasker implements LuhnMasker {
       Runtime.getRuntime().availableProcessors());
 
   private final BlockingQueue<Future<char[]>> processFutures =
-      new ArrayBlockingQueue<Future<char[]>>(20);
+      new ArrayBlockingQueue<Future<char[]>>(200);
 
   @Override public void run(final InputSupplier<? extends Reader> inSupplier, final Writer out) {
     new Thread(new Runnable() {

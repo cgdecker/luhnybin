@@ -61,7 +61,7 @@ final class LuhnyList {
     int originalStart = start;
     try {
       while (length() >= 14) {
-        if (shouldMask()) {
+        if (isLuhny()) {
           maskUnmaskedDigits(buffer, offset);
           return;
         } else {
@@ -94,21 +94,18 @@ final class LuhnyList {
     }
   }
 
-  private boolean shouldMask() {
-    return length() >= 14 && isLuhny();
-  }
-
   private boolean isLuhny() {
     return sum() % 10 == 0;
   }
 
   private int sum() {
-    if (length() == 0) {
-      return 0;
+    // ignore case where length is 0... only called when length is 14+
+    int result = evens[end - 1];
+    if (start > 0) {
+      int sumToSubtract = length() % 2 == 0 ?
+          evens[start - 1] : odds[start - 1];
+      result -= sumToSubtract;
     }
-
-    int startDiff = start == 0 ? 0 :
-        (length() % 2 == 0 ? evens[start - 1] : odds[start - 1]);
-    return evens[end - 1] - startDiff;
+    return result;
   }
 }
