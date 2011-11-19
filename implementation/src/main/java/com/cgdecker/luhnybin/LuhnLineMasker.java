@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
  *
  * @author cgdecker@gmail.com (Colin Decker)
  */
-public final class LuhnyLineMasker {
+public final class LuhnLineMasker {
 
   /**
    * Creates a {@link LineProcessor} that writes processed lines to the given writer.
@@ -36,84 +36,61 @@ public final class LuhnyLineMasker {
    * Processes the given line, writing the processed output to the given writer.
    */
   public static char[] process(String line) throws IOException {
-    return new LuhnyLineMasker(line).run();
+    return new LuhnLineMasker(line).run();
   }
 
   private final char[] buffer;
+  private final int length;
+  private final LuhnDigitBuffer digits = new LuhnDigitBuffer();
 
-  private LuhnyLineMasker(String line) {
+  private LuhnLineMasker(String line) {
     this.buffer = line.toCharArray();
+    this.length = buffer.length;
   }
 
   private char[] run() throws IOException {
     int pos = 0;
-    while (pos != -1 && (pos = nextDigit(pos)) != -1) {
+    while ((pos = nextDigit(pos)) < length) {
       pos = check(pos);
+      if (pos == length)
+        break;
     }
     return buffer;
   }
 
   /**
-   * Returns the index of the next digit or -1 if the end of line is reached.
+   * Returns the index of the next digit or the buffer length if the end of the buffer is reached.
    */
   private int nextDigit(int pos) {
-    for (int i = pos; i < buffer.length; i++) {
+    int i;
+    for (i = pos; i < length; i++) {
       if (isDigit(buffer[i]))
         return i;
     }
-    return -1;
+    return i;
   }
 
   /**
    * Checks the characters of the string starting at {@code pos}, known to be a digit, masking
-   * digits if needed. Returns the index of the next non-credit card character or -1 if the end of
-   * line is reached.
+   * digits if needed. Returns the index of the next non-credit card character or the buffer length
+   * if the end of the buffer is reached.
    */
   private int check(int pos) {
-    int totalDigits = 0;
-    int i = pos;
-    int lastDigitIndex = i;
     char c;
-    do {
+    int i;
+    for (i = pos; i < length; i++) {
       c = buffer[i];
       if (isDigit(c)) {
-        totalDigits++;
-        lastDigitIndex = i;
+        digits.add(c, i);
+        if (digits.length() >= 14)
+          digits.mask(buffer);
       } else if (!isSeparator(c)) {
+        digits.reset();
         break;
       }
-      i++;
-    } while (i < buffer.length);
-
-    int nextNonCcPos = i;
-
-    if (totalDigits >= 14) {
-      // we have a 14+ character substring with only digits, spaces and hyphens... check it
-      check(pos, lastDigitIndex - pos + 1, totalDigits);
     }
-    return nextNonCcPos == buffer.length ? -1 : nextNonCcPos;
-  }
 
-  /**
-   * Checks the given string, which has 14+ digits in it, determining if it has any credit card
-   * numbers in it. If it does, the string is written to the result with their digits replaced
-   * with Xs. If it does not, the string is written to the result as is.
-   */
-  private void check(int offset, int length, int totalDigits) {
-    // use an array-based list that tracks the Luhn digit sums of the values in it
-    LuhnyList digits = new LuhnyList(totalDigits);
-
-    for (int i = offset; i < offset + length; i++) {
-      char c = buffer[i];
-
-      if (isDigit(c)) {
-        digits.add(c, i - offset);
-
-        if (digits.length() >= 14) {
-          digits.mask(buffer, offset);
-        }
-      }
-    }
+    return i;
   }
 
   private static boolean isSeparator(char c) {

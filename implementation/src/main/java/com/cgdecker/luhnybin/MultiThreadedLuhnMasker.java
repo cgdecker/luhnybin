@@ -31,7 +31,7 @@ public class MultiThreadedLuhnMasker implements LuhnMasker {
       @Override public void run() {
         try {
           CharStreams.readLines(inSupplier,
-              LuhnyLineMasker.newAsyncLineProcessor(processingExecutor, processFutures));
+              LuhnLineMasker.newAsyncLineProcessor(processingExecutor, processFutures));
           processFutures.put(POISON);
         } catch (IOException e) {
           throw new RuntimeException(e);

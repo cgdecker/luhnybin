@@ -14,7 +14,7 @@ public class SingleThreadedLuhnMasker implements LuhnMasker {
 
   @Override public void run(InputSupplier<? extends Reader> inSupplier, Writer out) {
     try {
-      CharStreams.readLines(inSupplier, LuhnyLineMasker.newWritingLineProcessor(out));
+      CharStreams.readLines(inSupplier, LuhnLineMasker.newWritingLineProcessor(out));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
