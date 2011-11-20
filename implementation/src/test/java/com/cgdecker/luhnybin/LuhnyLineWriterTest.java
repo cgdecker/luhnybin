@@ -55,23 +55,12 @@ public class LuhnyLineWriterTest {
   }
 
   private static void assertMask(String in, String expectedOut) {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
     String result;
     try {
-      result = new String(LuhnLineMasker.process(in));
+      result = new String(LuhnLineMasker.mask(in));
     } catch (IOException e) {
       throw new AssertionError(e);
     }
     assertEquals(expectedOut + '\n', result + '\n');
-  }
-
-  private static String getOutput(byte[] bytes) {
-    try {
-      return CharStreams.toString(
-          CharStreams.newReaderSupplier(ByteStreams.newInputStreamSupplier(bytes),
-              Charset.defaultCharset()));
-    } catch (IOException e) {
-      throw new AssertionError(e);
-    }
   }
 }

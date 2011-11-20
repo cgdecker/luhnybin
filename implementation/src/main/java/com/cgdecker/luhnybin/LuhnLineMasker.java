@@ -1,58 +1,38 @@
 package com.cgdecker.luhnybin;
 
-import com.google.common.io.LineProcessor;
-
 import java.io.IOException;
-import java.io.Writer;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
- * Handles processing a single line of input.
+ * Handles processing single lines of input.
  *
  * @author cgdecker@gmail.com (Colin Decker)
  */
-public final class LuhnLineMasker {
+public final class LuhnLineMasker implements Callable<char[]> {
 
   /**
-   * Creates a {@link LineProcessor} that writes processed lines to the given writer.
+   * Masks any possible credit card sequences in the given line, returning the resulting line as a
+   * char array.
    */
-  public static LineProcessor<Void> newWritingLineProcessor(Writer writer) {
-    return new WritingProcessor(writer);
+  public static char[] mask(String line) throws IOException {
+    return new LuhnLineMasker(line).call();
   }
 
-  /**
-   * Creates a {@link LineProcessor} that submits processing tasks to an executor and adds the resulting
-   * {@link Future}s to a blocking queue for another thread to read.
-   */
-  public static LineProcessor<Void> newAsyncLineProcessor(ExecutorService executor,
-      BlockingQueue<Future<char[]>> queue) {
-    return new AsyncProcessor(executor, queue);
+  private final char[] buffer;
+  private final LuhnDigitBuffer digits = new LuhnDigitBuffer();
+
+  public LuhnLineMasker(String line) {
+    this.buffer = line.toCharArray();
   }
 
   /**
    * Processes the given line, writing the processed output to the given writer.
    */
-  public static char[] process(String line) throws IOException {
-    return new LuhnLineMasker(line).run();
-  }
-
-  private final char[] buffer;
-  private final int length;
-  private final LuhnDigitBuffer digits = new LuhnDigitBuffer();
-
-  private LuhnLineMasker(String line) {
-    this.buffer = line.toCharArray();
-    this.length = buffer.length;
-  }
-
-  private char[] run() throws IOException {
+  public char[] call() throws IOException {
     int pos = 0;
-    while ((pos = nextDigit(pos)) < length) {
+    while ((pos = nextDigit(pos)) < buffer.length) {
       pos = check(pos);
-      if (pos == length)
+      if (pos == buffer.length)
         break;
     }
     return buffer;
@@ -63,7 +43,7 @@ public final class LuhnLineMasker {
    */
   private int nextDigit(int pos) {
     int i;
-    for (i = pos; i < length; i++) {
+    for (i = pos; i < buffer.length; i++) {
       if (isDigit(buffer[i]))
         return i;
     }
@@ -78,7 +58,7 @@ public final class LuhnLineMasker {
   private int check(int pos) {
     char c;
     int i;
-    for (i = pos; i < length; i++) {
+    for (i = pos; i < buffer.length; i++) {
       c = buffer[i];
       if (isDigit(c)) {
         digits.add(c, i);
@@ -99,71 +79,5 @@ public final class LuhnLineMasker {
 
   private static boolean isDigit(char c) {
     return '0' <= c && c <= '9';
-  }
-
-  /**
-   * {@link LineProcessor} implementation that writes filtered lines to the given writer.
-   */
-  private static final class WritingProcessor implements LineProcessor<Void> {
-
-    private final Writer writer;
-
-    public WritingProcessor(Writer writer) {
-      this.writer = writer;
-    }
-
-    @Override public boolean processLine(String line) throws IOException {
-      char[] result = process(line);
-      writer.write(result);
-      writer.write('\n');
-      writer.flush();
-      return true;
-    }
-
-    @Override public Void getResult() {
-      return null;
-    }
-  }
-
-  /**
-   * A {@link LineProcessor} that submits processing tasks to an executor and adds the resulting
-   * {@link Future}s to a blocking queue for another thread to read.
-   */
-  private static final class AsyncProcessor implements LineProcessor<Void> {
-
-    private final ExecutorService executor;
-    private final BlockingQueue<Future<char[]>> queue;
-
-    public AsyncProcessor(ExecutorService executor, BlockingQueue<Future<char[]>> queue) {
-      this.executor = executor;
-      this.queue = queue;
-    }
-
-    public boolean processLine(String line) throws IOException {
-      try {
-        queue.put(executor.submit(new ProcessLineTask(line)));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e);
-      }
-      return true;
-    }
-
-    public Void getResult() {
-      return null;
-    }
-  }
-
-  private static final class ProcessLineTask implements Callable<char[]> {
-
-    private final String line;
-
-    public ProcessLineTask(String line) {
-      this.line = line;
-    }
-
-    @Override public char[] call() throws Exception {
-      return process(line);
-    }
   }
 }

@@ -40,19 +40,19 @@ final class LuhnDigitBuffer {
   public void add(char digit, int index) {
     int number = digit - '0';
 
-    int lastIndex = wrap(end - 1);
+    int lastIndex = prev(end);
 
     evens[end] = number + odds[lastIndex];
     odds[end] = DOUBLE_SUMS[number] + evens[lastIndex];
 
     indices[end] = index;
 
-    end = wrap(end + 1);
+    end = next(end);
 
     if (length < 16) {
       length++;
     } else {
-      start = wrap(start + 1);
+      start = next(start);
     }
   }
 
@@ -61,6 +61,20 @@ final class LuhnDigitBuffer {
    */
   public int length() {
     return length;
+  }
+
+  /**
+   * Gets the buffer index before {@code i}.
+   */
+  private static int prev(int i) {
+    return wrap(i - 1);
+  }
+
+  /**
+   * Gets the buffer index after {@code i}.
+   */
+  private static int next(int i) {
+    return wrap(i + 1);
   }
 
   private static int wrap(int i) {
@@ -80,7 +94,7 @@ final class LuhnDigitBuffer {
           maskUnmaskedDigits(buffer);
           return;
         } else {
-          start = wrap(start + 1);
+          start = next(start);
           length--;
         }
       }
@@ -91,12 +105,12 @@ final class LuhnDigitBuffer {
   }
 
   private void maskUnmaskedDigits(char[] buffer) {
-    for (int i = start; i != end; i = wrap(i + 1)) {
+    for (int i = start; i != end; i = next(i)) {
       if (!mask(buffer, i))
         break;
     }
 
-    for (int i = wrap(end - 1); i != wrap(start - 1); i = wrap(i - 1)) {
+    for (int i = prev(end); i != prev(start); i = prev(i)) {
       if (!mask(buffer, i))
         break;
     }
@@ -118,8 +132,8 @@ final class LuhnDigitBuffer {
 
   private int sum() {
     // ignore case where length is 0... only called when length is 14+
-    int totalSum = evens[wrap(end - 1)];
-    int indexBeforeStart = wrap(start - 1);
+    int totalSum = evens[prev(end)];
+    int indexBeforeStart = prev(start);
     int sumToSubtract = length % 2 == 0 ? evens[indexBeforeStart] : odds[indexBeforeStart];
     return totalSum - sumToSubtract;
   }
