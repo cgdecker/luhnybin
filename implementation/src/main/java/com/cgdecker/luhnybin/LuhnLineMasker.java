@@ -73,17 +73,16 @@ public final class LuhnLineMasker implements Callable<char[]> {
 
     if (totalDigits >= 14) {
       // we have a 14+ character substring with only digits, spaces and hyphens... check it
-      check(pos, lastDigitIndex - pos + 1, totalDigits);
+      mask(pos, lastDigitIndex - pos + 1, totalDigits);
     }
     return nextNonCcPos;
   }
 
   /**
-   * Checks the given string, which has 14+ digits in it, determining if it has any credit card
-   * numbers in it. If it does, the string is written to the result with their digits replaced
-   * with Xs. If it does not, the string is written to the result as is.
+   * Checks the given range (containing 14+ digits) in the buffer, masking any possible credit card numbers
+   * in it.
    */
-  private void check(int offset, int length, int totalDigits) {
+  private void mask(int offset, int length, int totalDigits) {
     LuhnDigitBuffer digits = new LuhnDigitBuffer(totalDigits);
 
     for (int i = offset; i < offset + length; i++) {
