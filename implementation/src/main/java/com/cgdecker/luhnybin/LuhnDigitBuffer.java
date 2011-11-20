@@ -6,7 +6,7 @@ package com.cgdecker.luhnybin;
  *
  * @author cgdecker@gmail.com (Colin Decker)
  */
-final class LuhnyList {
+final class LuhnDigitBuffer {
 
   private static final int[] DOUBLE_SUMS = {0, 2, 4, 6, 8, 1, 3, 5, 7, 9};
 
@@ -17,7 +17,7 @@ final class LuhnyList {
   private int start;
   private int end;
 
-  public LuhnyList(int maxLength) {
+  public LuhnDigitBuffer(int maxLength) {
     this.evens = new int[maxLength];
     this.odds = new int[maxLength];
     this.indices = new int[maxLength];
@@ -57,12 +57,12 @@ final class LuhnyList {
    * For the digits this list represents and any shorter list of digits that ends at the digit this
    * list ends at, masks the digits if they pass the Luhn check and may be a credit card number.
    */
-  public void mask(char[] buffer, int offset) {
+  public void mask(char[] buffer) {
     int originalStart = start;
     try {
       while (length() >= 14) {
         if (isLuhny()) {
-          maskUnmaskedDigits(buffer, offset);
+          maskUnmaskedDigits(buffer);
           return;
         } else {
           start++;
@@ -73,21 +73,21 @@ final class LuhnyList {
     }
   }
 
-  private void maskUnmaskedDigits(char[] buffer, int offset) {
+  private void maskUnmaskedDigits(char[] buffer) {
     for (int i = start; i < end; i++) {
-      if (!mask(buffer, offset, i))
+      if (!mask(buffer, i))
         break;
     }
 
     for (int i = end - 1; i >= start; i--) {
-      if (!mask(buffer, offset, i))
+      if (!mask(buffer, i))
         break;
     }
   }
 
-  private boolean mask(char[] buffer, int offset, int i) {
-    if (buffer[offset + indices[i]] != 'X') {
-      buffer[offset + indices[i]] = 'X';
+  private boolean mask(char[] buffer, int i) {
+    if (buffer[indices[i]] != 'X') {
+      buffer[indices[i]] = 'X';
       return true;
     } else {
       return false;
