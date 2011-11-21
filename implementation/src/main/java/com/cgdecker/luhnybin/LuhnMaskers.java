@@ -38,9 +38,11 @@ public class LuhnMaskers {
   /**
    * Returns a multithreaded masker that reads and writes on separate threads and uses a thread
    * pool to mask lines.
+   *
+   * @param processingThreads the number of threads to use for processing input lines.
    */
-  public static LuhnMasker newMultithreadedMasker() {
-    return new MultithreadedLuhnMasker();
+  public static LuhnMasker newMultithreadedMasker(int processingThreads) {
+    return new MultithreadedLuhnMasker(processingThreads);
   }
 
   private static class BasicLuhnMasker implements LuhnMasker {
@@ -70,11 +72,14 @@ public class LuhnMaskers {
 
     private static final Future<char[]> POISON = Futures.immediateFuture(null);
 
-    private final ExecutorService processingExecutor = Executors.newFixedThreadPool(
-        Runtime.getRuntime().availableProcessors());
+    private final ExecutorService processingExecutor;
 
     private final BlockingQueue<Future<char[]>> processFutures =
         new ArrayBlockingQueue<Future<char[]>>(200);
+
+    MultithreadedLuhnMasker(int processingThreads) {
+      this.processingExecutor = Executors.newFixedThreadPool(processingThreads);
+    }
 
     @Override public void run(final InputSupplier<? extends Reader> inSupplier, final Writer out) {
       new Thread(new Runnable() {

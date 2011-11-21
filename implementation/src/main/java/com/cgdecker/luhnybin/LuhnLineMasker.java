@@ -31,8 +31,6 @@ public final class LuhnLineMasker implements Callable<char[]> {
     int pos = 0;
     while ((pos = nextDigit(pos)) < buffer.length) {
       pos = check(pos);
-      if (pos == buffer.length)
-        break;
     }
     return buffer;
   }
